@@ -1,0 +1,30 @@
+<?php
+
+/**
+ * @file
+ * Code for the IMLS Groups feature.
+ */
+
+include_once 'imls_groups.features.inc';
+
+/**
+  *
+  * Implementation of hook_form_alter
+  */
+function imls_groups_form_alter(&$form, &$form_state, $form_id) {
+  if($form_id == 'group_event_node_form') {
+    $query_params = drupal_get_query_parameters();
+    if(isset($query_params['imlsgid']) && arg(1) == 'add'){
+      $form['og_group_ref']['und'][0]['default']['#default_value'] = $query_params['imlsgid'];
+      $form['actions']['submit']['#submit'][] = 'imls_groups_group_event_form_submit';
+      dpm($form);
+    }
+  }
+}
+
+function imls_groups_group_event_form_submit($form, &$form_state) {
+  $query_params = drupal_get_query_parameters();
+  if(isset($query_params['imlsgid']) && arg(1) == 'add'){
+    $form_state['redirect'] = '/node/' . $query_params['imlsgid'] . '/events'; 
+  }
+}
