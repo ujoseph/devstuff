@@ -17,8 +17,37 @@ function imls_groups_form_alter(&$form, &$form_state, $form_id) {
     if(isset($query_params['imlsgid']) && arg(1) == 'add'){
       $form['og_group_ref']['und'][0]['default']['#default_value'] = $query_params['imlsgid'];
       $form['actions']['submit']['#submit'][] = 'imls_groups_group_event_form_submit';
-      dpm($form);
     }
+  }
+
+  if($form_id == 'group_post_node_form') {
+    $query_params = drupal_get_query_parameters();
+    if(isset($query_params['imlsgid']) && arg(1) == 'add'){
+      $form['og_group_ref']['und'][0]['default']['#default_value'] = $query_params['imlsgid'];
+      $form['actions']['submit']['#submit'][] = 'imls_groups_group_post_form_submit';
+    }
+  }
+
+  if($form_id == 'document_node_form') {
+    $query_params = drupal_get_query_parameters();
+    if(isset($query_params['imlsgid']) && arg(1) == 'add'){
+      $form['og_group_ref']['und'][0]['default']['#default_value'] = $query_params['imlsgid'];
+      $form['actions']['submit']['#submit'][] = 'imls_groups_document_form_submit';
+    }
+  }
+}
+
+function imls_groups_group_post_form_submit($form, &$form_state) {
+  $query_params = drupal_get_query_parameters();
+  if(isset($query_params['imlsgid']) && arg(1) == 'add'){
+    $form_state['redirect'] = '/node/' . $query_params['imlsgid'] . '/posts';
+  }
+}
+
+function imls_groups_document_form_submit($form, &$form_state) {
+  $query_params = drupal_get_query_parameters();
+  if(isset($query_params['imlsgid']) && arg(1) == 'add'){
+    $form_state['redirect'] = '/node/' . $query_params['imlsgid'] . '/documents';
   }
 }
 
@@ -28,3 +57,24 @@ function imls_groups_group_event_form_submit($form, &$form_state) {
     $form_state['redirect'] = '/node/' . $query_params['imlsgid'] . '/events'; 
   }
 }
+
+
+/** 
+* Implements hook_node_access().
+*/
+function imls_groups_node_access($node, $op, $account){
+  if (isset($node->type) && $node->type == 'community' && $op == 'view'){
+    global $user;
+    $is_member = og_is_member('node', $node->nid, 'user', $user);
+
+    if($is_member) {
+      return NODE_ACCESS_ALLOW;
+    }
+    else {
+      return NODE_ACCESS_DENY;
+    }
+  }
+
+  return NODE_ACCESS_IGNORE;
+}
+

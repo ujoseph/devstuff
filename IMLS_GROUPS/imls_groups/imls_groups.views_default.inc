@@ -45,7 +45,14 @@ function imls_groups_views_default_views() {
   $handler->display->display_options['header']['area']['id'] = 'area';
   $handler->display->display_options['header']['area']['table'] = 'views';
   $handler->display->display_options['header']['area']['field'] = 'area';
-  $handler->display->display_options['header']['area']['content'] = '<a class="form-submit" href="/node/add/group-event">+ Add Event</a> ';
+  $handler->display->display_options['header']['area']['empty'] = TRUE;
+  $handler->display->display_options['header']['area']['content'] = '<a class="form-submit" href="/node/add/group-event">+ Add Event</a>
+<style>
+.view-group-calendar .date-prev, .view-group-calendar .date-next {
+    list-style: none !important;
+    padding: 0px 4px !important;
+}
+</style>';
   $handler->display->display_options['header']['area']['format'] = 'full_html';
   /* Relationship: OG membership: Group Content from OG membership */
   $handler->display->display_options['relationships']['og_membership_related_node_group']['id'] = 'og_membership_related_node_group';
@@ -78,6 +85,18 @@ function imls_groups_views_default_views() {
   );
   $handler->display->display_options['fields']['field_group_event_date']['group_rows'] = FALSE;
   $handler->display->display_options['fields']['field_group_event_date']['delta_offset'] = '0';
+  /* Field: OG membership: Group ID */
+  $handler->display->display_options['fields']['gid']['id'] = 'gid';
+  $handler->display->display_options['fields']['gid']['table'] = 'og_membership';
+  $handler->display->display_options['fields']['gid']['field'] = 'gid';
+  $handler->display->display_options['fields']['gid']['relationship'] = 'og_membership_related_node_group';
+  $handler->display->display_options['fields']['gid']['exclude'] = TRUE;
+  /* Field: Content: Nid */
+  $handler->display->display_options['fields']['nid']['id'] = 'nid';
+  $handler->display->display_options['fields']['nid']['table'] = 'node';
+  $handler->display->display_options['fields']['nid']['field'] = 'nid';
+  $handler->display->display_options['fields']['nid']['relationship'] = 'og_membership_related_node_group';
+  $handler->display->display_options['fields']['nid']['exclude'] = TRUE;
   /* Sort criterion: Content: Event Date -  start date (field_group_event_date) */
   $handler->display->display_options['sorts']['field_group_event_date_value']['id'] = 'field_group_event_date_value';
   $handler->display->display_options['sorts']['field_group_event_date_value']['table'] = 'field_data_field_group_event_date';
@@ -679,7 +698,7 @@ function imls_groups_views_default_views() {
   $handler = $view->new_display('default', 'Defaults', 'default');
   $handler->display->display_options['use_more_always'] = TRUE;
   $handler->display->display_options['access']['type'] = 'og_context';
-  $handler->display->display_options['access']['perm'] = 'unsubscribe';
+  $handler->display->display_options['access']['perm'] = 'create group_post content';
   $handler->display->display_options['access']['group_id_arg'] = '1';
   $handler->display->display_options['cache']['type'] = 'none';
   $handler->display->display_options['query']['type'] = 'views_query';
@@ -900,7 +919,8 @@ function imls_groups_views_default_views() {
   $handler->display->display_options['fields']['created']['field'] = 'created';
   $handler->display->display_options['fields']['created']['label'] = 'Member since';
   $handler->display->display_options['fields']['created']['hide_alter_empty'] = FALSE;
-  $handler->display->display_options['fields']['created']['date_format'] = 'time ago';
+  $handler->display->display_options['fields']['created']['date_format'] = 'short';
+  $handler->display->display_options['fields']['created']['second_date_format'] = 'search_api_facetapi_YEAR';
   /* Field: User: Name */
   $handler->display->display_options['fields']['name']['id'] = 'name';
   $handler->display->display_options['fields']['name']['table'] = 'users';
