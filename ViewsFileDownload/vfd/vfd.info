@@ -1,0 +1,11 @@
+name = Views File Downloader
+description =  Provides a link to download files attached to a view.
+core = 7.x
+dependencies[] = libraries
+
+; Information added by Drupal.org packaging script on 2017-06-13
+version = "7.x-1.1"
+core = "7.x"
+project = "vfd"
+datestamp = "1497340147"
+

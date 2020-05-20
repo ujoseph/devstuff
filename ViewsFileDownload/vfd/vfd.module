@@ -1,0 +1,148 @@
+<?php
+/**
+ * @file
+ *
+ * Handles module administration and download link of Views File Downloader.
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function vfd_menu() {
+  $items = array();
+  $items['download_node/%/%'] = array(
+    'page callback'    => 'vfd_download_node',
+    'page arguments'   => array(1, 2),
+    'access arguments' => array('see download link'),
+    'type'             => MENU_CALLBACK,
+  );
+
+  $items['download_view/%'] = array(
+    'page callback'    => 'vfd_download_view',
+    'page arguments'   => array(1, 2),
+    'access arguments' => array('see download link'),
+    'type'             => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function vfd_download_node($type,$path) {
+
+  $node_files = array();
+  if (arg(1) == 'node' && is_numeric(arg(2))) {
+    $nodeID = arg(2);
+  }
+
+  $lib_path = libraries_get_path('pclzip');
+  if (!is_dir($lib_path)) {
+    $uri_info = entity_uri($entity_type, $entity);
+    drupal_goto($uri_info['path']);
+  }
+
+  include $lib_path . '/pclzip.lib.php';
+  $filename = "NodeFiles.zip";
+
+  $files = files_node($nodeID);
+
+  foreach ($files as $key => $value) {
+    $node_files[$key] = drupal_realpath($value);
+  }
+
+  $tmp_file = file_save_data('', 'temporary://' . $filename);
+  $tmp_file->status = 0;
+  $file = file_save($tmp_file);
+  $archive = new PclZip(drupal_realpath($file->uri));
+  $archive->add($node_files, PCLZIP_OPT_REMOVE_ALL_PATH);
+  header("Content-Type: application/force-download");
+  header('Content-Description: File Transfer');
+  header('Content-Disposition: inline; filename=' . $filename);
+  readfile(drupal_realpath($file->uri));
+  file_delete($file);
+  exit();
+
+}
+
+function vfd_download_view($path) {
+  $query_params = drupal_get_query_parameters();
+  $min = isset($query_params['created']['min']) ? $query_params['created']['min'] : FALSE;
+  $max = isset($query_params['created']['max']) ? $query_params['created']['max'] : FALSE;
+
+  $view = views_get_view($path);
+
+  if($min && $max) {
+    $exposed_filters = [];
+    $exposed_filters['created'] = ['min' => $min, 'max' => $max];
+    $view->set_exposed_input($exposed_filters);
+  }
+
+  $view->init_display();
+  $view->pre_execute();
+  $view->execute();
+  $view_result = $view->result;
+
+  $view_files = array();
+  $lib_path = libraries_get_path('pclzip');
+  if (!is_dir($lib_path)) {
+    $uri_info = entity_uri($entity_type, $entity);
+    drupal_goto($uri_info['path']);
+  }
+
+  include $lib_path . '/pclzip.lib.php';
+  $filename = "ViewFiles.zip";
+  foreach ($view_result as $key => $value) {
+    $files[$key] = array($value->field_field_secure_resume_upload[0]['raw']['uri']);
+  }
+  $i = 0;
+  foreach ($files as $key => $value) {
+    foreach ($value as $key2 => $value2) {
+      $file_real_path = drupal_realpath($value2); 
+
+      if(file_exists($file_real_path)) {
+        $view_files[$i] =  $file_real_path;
+        $i++;
+      }
+    }
+  }
+
+  $tmp_file = file_save_data('', 'temporary://' . $filename);
+  $tmp_file->status = 0;
+  $file = file_save($tmp_file);
+  $archive = new PclZip(drupal_realpath($file->uri));
+  $archive->add($view_files, PCLZIP_OPT_REMOVE_ALL_PATH);
+  header("Content-Type: application/force-download");
+  header('Content-Description: File Transfer');
+  header('Content-Disposition: inline; filename=' . $filename);
+  readfile(drupal_realpath($file->uri));
+  file_delete($file);
+  exit();
+}
+
+
+/**
+  *
+  * Implementation of hook_form_alter
+  */
+function vfd_form_alter(&$form, &$form_state, $form_id) {
+  if($form_id == 'views_exposed_form' && $form['#id'] == 'views-exposed-form-resume-downloads-page') {
+    $query_params = drupal_get_query_parameters();
+
+    $form['submit']['#suffix'] = l('Download Resumes', '/download_view/resume_downloads', ['query' => $query_params, 'attributes' => ['class' => 'btn', 'style' => 'margin-left:10px;']]);
+  }
+}
+
+/**
+ * IMPORTANT:
+ * field_file is the field machine name of the file field.
+ */
+
+function files_node($nid)
+{
+  $node = node_load($nid);
+  $node_files = array();
+  foreach ($node->field_file['und'] as $key => $value) {
+    $node_files[$key] = $value['uri'];
+  }
+  return $node_files;
+}
+

@@ -1,0 +1,129 @@
+<?php
+/**
+ * @file
+ *
+ * Handles module administration and download link of Views File Downloader.
+ */
+
+
+/**
+ * Implements hook_menu().
+ */
+function vfd_menu() {
+  $items = array();
+  $items['download_node/%/%'] = array(
+    'page callback'    => 'vfd_download_node',
+    'page arguments'   => array(1, 2),
+    'access arguments' => array('see download link'),
+    'type'             => MENU_CALLBACK,
+  );
+
+  $items['download_view/%'] = array(
+    'page callback'    => 'vfd_download_view',
+    'page arguments'   => array(1, 2),
+    'access arguments' => array('see download link'),
+    'type'             => MENU_CALLBACK,
+  );
+  return $items;
+}
+
+function vfd_download_node($type,$path) {
+
+  $node_files = array();
+  if (arg(1) == 'node' && is_numeric(arg(2))) {
+    $nodeID = arg(2);
+  }
+
+  $lib_path = libraries_get_path('pclzip');
+  if (!is_dir($lib_path)) {
+    $uri_info = entity_uri($entity_type, $entity);
+    drupal_goto($uri_info['path']);
+  }
+
+  include $lib_path . '/pclzip.lib.php';
+  $filename = "NodeFiles.zip";
+
+  $files = files_node($nodeID);
+
+  foreach ($files as $key => $value) {
+    $node_files[$key] = drupal_realpath($value);
+  }
+
+  $tmp_file = file_save_data('', 'temporary://' . $filename);
+  $tmp_file->status = 0;
+  $file = file_save($tmp_file);
+  $archive = new PclZip(drupal_realpath($file->uri));
+  $archive->add($node_files, PCLZIP_OPT_REMOVE_ALL_PATH);
+  header("Content-Type: application/force-download");
+  header('Content-Description: File Transfer');
+  header('Content-Disposition: inline; filename=' . $filename);
+  readfile(drupal_realpath($file->uri));
+  file_delete($file);
+  exit();
+
+}
+
+function vfd_download_view($path) {
+  $view_files = array();
+  $lib_path = libraries_get_path('pclzip');
+  if (!is_dir($lib_path)) {
+    $uri_info = entity_uri($entity_type, $entity);
+    drupal_goto($uri_info['path']);
+  }
+
+  include $lib_path . '/pclzip.lib.php';
+  $filename = "ViewFiles.zip";
+  $view_result = views_get_view_result($path);
+  foreach ((views_get_view_result($path)) as $key => $value) {
+        $files[$key] =entityform_load_node($value->entityform_id);
+  }
+  $i = 0;
+  foreach ($files as $key => $value) {
+    foreach ($value as $key2 => $value2) {
+      $view_files[$i] = drupal_realpath($value2); 
+      $i++;
+    }
+  }
+  echo '<pre>';
+print_r($view_files);
+echo '</pre>';
+exit;
+  $tmp_file = file_save_data('', 'temporary://' . $filename);
+  $tmp_file->status = 0;
+  $file = file_save($tmp_file);
+  $archive = new PclZip(drupal_realpath($file->uri));
+  $archive->add($view_files, PCLZIP_OPT_REMOVE_ALL_PATH);
+  header("Content-Type: application/force-download");
+  header('Content-Description: File Transfer');
+  header('Content-Disposition: inline; filename=' . $filename);
+  readfile(drupal_realpath($file->uri));
+  file_delete($file);
+  exit();
+}
+
+/**
+ * IMPORTANT:
+ * field_file is the field machine name of the file field.
+ */
+//temp function to test
+
+function entityform_load_node($efid){
+        $entity_files = array();
+	$wrapper = entity_metadata_wrapper('entityform', $efid);
+	foreach ($wrapper->field_secure_resume_upload->value() as $key => $value) {
+	  if($key == "uri" ) {
+        	$entity_files[$key] = $value;
+          }
+        }
+	return $entity_files;
+}
+
+function files_node($nid)
+{
+  $node = node_load($nid);
+  $node_files = array();
+  foreach ($node->field_file['und'] as $key => $value) {
+    $node_files[$key] = $value['uri'];
+  }
+  return $node_files;
+}
